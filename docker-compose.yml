@@ -1,0 +1,41 @@
+# Versiones fijas a proposito. `postgres:18` y `odoo:20` son etiquetas moviles:
+# dos instalaciones hechas con un mes de diferencia traen binarios distintos, y
+# recrear un contenedor puede subir de version sin avisar.
+#   postgres:18.6        PostgreSQL 18.6
+#   odoo:20.0-20260926   Odoo Server 20.0, build del 26 de septiembre de 2026
+# Para subir de version: cambiar la etiqueta aqui, levantar en una instancia de
+# prueba y recien entonces replicar.
+services:
+  db:
+    image: postgres:18.6
+    user: root
+    environment:
+      - POSTGRES_USER=odoo
+      - POSTGRES_PASSWORD=CAMBIAR_ESTA_CLAVE_DB
+      - POSTGRES_DB=postgres
+    restart: always             # run as a service
+    volumes:
+        - ./postgresql:/var/lib/postgresql/18/docker      # Important Change: the PGDATA environment variable of the image was changed to be version specific in PostgreSQL 18 and above
+
+  odoo20:
+    image: odoo:20.0-20260926
+    user: root
+    depends_on:
+      - db
+    ports:
+      - "10020:8069"
+      - "20020:8072" # live chat
+    tty: true
+    command: --
+    environment:
+      - HOST=db
+      - USER=odoo
+      - PASSWORD=CAMBIAR_ESTA_CLAVE_DB
+      - PIP_BREAK_SYSTEM_PACKAGES=1
+    volumes:
+      #- /etc/timezone:/etc/timezone:ro
+      #- /etc/localtime:/etc/localtime:ro
+      - ./entrypoint.sh:/entrypoint.sh
+      - ./addons:/mnt/extra-addons
+      - ./etc:/etc/odoo
+    restart: always             # run as a service
